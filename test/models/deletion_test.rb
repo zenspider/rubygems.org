@@ -12,7 +12,6 @@ class DeletionTest < ActiveSupport::TestCase
     @gem_file.rewind
     @version = Version.last
     @spec_rz = RubygemFs.instance.get("quick/Marshal.4.8/#{@version.full_name}.gemspec.rz")
-    import_and_refresh
   end
 
   teardown do
