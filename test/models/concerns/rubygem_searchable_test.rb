@@ -3,10 +3,6 @@ require "test_helper"
 class RubygemSearchableTest < ActiveSupport::TestCase
   include SearchKickHelper
 
-  setup do
-    Rubygem.searchkick_index.delete if Rubygem.searchkick_index.exists?
-  end
-
   context "#search_data" do
     setup do
       @rubygem = create(:rubygem, name: "example_gem", downloads: 10)
@@ -128,7 +124,7 @@ class RubygemSearchableTest < ActiveSupport::TestCase
       create(:rubygem, name: "example-gem", number: "0.0.1")
       create(:rubygem, name: "example_1", number: "0.0.1")
       create(:rubygem, name: "example.rb", number: "0.0.1")
-      import_and_refresh
+
     end
 
     should "find all gems with matching tokens" do
@@ -147,7 +143,7 @@ class RubygemSearchableTest < ActiveSupport::TestCase
       example_2 = create(:rubygem, name: "example_2")
       create(:version, rubygem: example_1, indexed: false)
       create(:version, rubygem: example_2)
-      import_and_refresh
+
     end
 
     should "filter yanked gems from the result" do
@@ -167,7 +163,7 @@ class RubygemSearchableTest < ActiveSupport::TestCase
       create(:version, rubygem: example_gem1, description: "some", summary: "some")
       create(:version, rubygem: example_gem2, description: "keyword", summary: "some")
       create(:version, rubygem: example_gem3, summary: "keyword", description: "some")
-      import_and_refresh
+
     end
 
     should "look for keyword in name, summary and description and order them in same priority order" do
@@ -184,7 +180,7 @@ class RubygemSearchableTest < ActiveSupport::TestCase
         rubygem = create(:rubygem, name: "gem_#{downloads}", downloads: downloads)
         create(:version, rubygem: rubygem)
       end
-      import_and_refresh
+
     end
 
     should "boost score of result by downloads count" do
@@ -199,7 +195,6 @@ class RubygemSearchableTest < ActiveSupport::TestCase
     setup do
       rubygem = create(:rubygem, name: "example_gem", downloads: 10)
       create(:version, rubygem: rubygem, summary: "some summary", description: "some description")
-      import_and_refresh
     end
 
     should "return all terms of source" do
@@ -225,7 +220,7 @@ class RubygemSearchableTest < ActiveSupport::TestCase
       example2 = create(:rubygem, name: "keywordo")
       example3 = create(:rubygem, name: "keywo")
       [example1, example2, example3].each { |gem| create(:version, rubygem: gem) }
-      import_and_refresh
+
     end
 
     should "suggest names of possible gems" do
@@ -249,7 +244,7 @@ class RubygemSearchableTest < ActiveSupport::TestCase
       rubygem2 = create(:rubygem, name: "web-rubygem", downloads: 99)
       create(:version, rubygem: rubygem1, summary: "special word with web-rubygem")
       create(:version, rubygem: rubygem2, description: "example special word")
-      import_and_refresh
+
     end
 
     should "filter gems on downloads" do
@@ -303,7 +298,7 @@ class RubygemSearchableTest < ActiveSupport::TestCase
       create(:version, rubygem: rubygem2, description: "example gems set the example")
       rubygem1.update_column("updated_at", 2.days.ago)
       rubygem2.update_column("updated_at", 10.days.ago)
-      import_and_refresh
+
       _, @response = ElasticSearcher.new("example").search
     end
 
@@ -326,8 +321,6 @@ class RubygemSearchableTest < ActiveSupport::TestCase
 
   context "#search" do
     context "exception handling" do
-      setup { import_and_refresh }
-
       context "Searchkick::InvalidQueryError" do
         setup do
           @ill_formated_query = "updated:[2016-08-10 TO }"
@@ -364,7 +357,7 @@ class RubygemSearchableTest < ActiveSupport::TestCase
           rubygem = create(:rubygem, name: gem_name, downloads: 10)
           create(:version, rubygem: rubygem)
         end
-        import_and_refresh
+
       end
 
       should "not affect results" do
@@ -381,7 +374,7 @@ class RubygemSearchableTest < ActiveSupport::TestCase
       %w[term-ansicolor term-an].each do |gem_name|
         create(:rubygem, name: gem_name, number: "0.0.1", downloads: 10)
       end
-      import_and_refresh
+
     end
 
     should "return results" do
