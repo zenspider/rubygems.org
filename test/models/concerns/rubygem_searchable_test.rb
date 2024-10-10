@@ -191,7 +191,7 @@ class RubygemSearchableTest < ActiveSupport::TestCase
   context "source" do
     setup do
       rubygem = create(:rubygem, name: "example_gem", downloads: 10)
-      create(:version, rubygem: rubygem, summary: "some summary", description: "some description")
+      create(:version, :reindex, rubygem: rubygem, summary: "some summary", description: "some description")
     end
 
     should "return all terms of source" do

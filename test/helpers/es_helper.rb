@@ -10,7 +10,6 @@ module SearchKickHelper
   end
 
   def get_response(id)
-    Rubygem.searchkick_index.refresh
-    Searchkick.client.get index: "rubygems-#{Rails.env}", id: id
+    Searchkick.client.get index: Rubygem.search_index.name, id: id
   end
 end

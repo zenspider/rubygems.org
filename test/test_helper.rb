@@ -82,10 +82,9 @@ class ActiveSupport::TestCase
     Version.reset_column_information # TODO: Remove once https://github.com/rails/rails/pull/52703 is released
 
     SemanticLogger.reopen
-    Searchkick.index_suffix = worker
-
+    Searchkick.index_suffix = "_#{worker}"
     Rubygem.reindex
-    Rubygem.disable_callbacks
+    Searchkick.disable_callbacks
   end
 
   setup do
@@ -95,6 +94,9 @@ class ActiveSupport::TestCase
 
     Unpwn.offline = true
     OmniAuth.config.mock_auth.clear
+
+    Rubygem.reindex
+    Searchkick.disable_callbacks
 
     @launch_darkly = LaunchDarkly::Integrations::TestData.data_source
     config = LaunchDarkly::Config.new(data_source: @launch_darkly, send_events: false)
