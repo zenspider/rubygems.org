@@ -24,6 +24,6 @@ module SearchKickHelper
 
   def get_response(id)
     Rubygem.searchkick_index.refresh
-    Searchkick.client.get index: Gemcutter::SEARCH_INDEX_NAME, id: id
+    Searchkick.client.get index: Rubygem.searchkick_index.name, id: id
   end
 end
