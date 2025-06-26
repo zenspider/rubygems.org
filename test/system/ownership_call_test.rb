@@ -1,9 +1,7 @@
 require "application_system_test_case"
-require "helpers/adoption_helpers"
 
 class OwnershipCallsTest < ApplicationSystemTestCase
   include ActionMailer::TestHelper
-  include AdoptionHelpers
 
   setup do
     @owner = create(:user)
