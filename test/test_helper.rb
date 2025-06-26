@@ -79,8 +79,6 @@ class ActiveSupport::TestCase
   include EmailHelpers
   include PasswordHelpers
 
-  parallelize(workers: :number_of_processors)
-
   parallelize_setup do |worker|
     Version.reset_column_information # TODO: Remove once https://github.com/rails/rails/pull/52703 is released
 
@@ -90,6 +88,8 @@ class ActiveSupport::TestCase
     Searchkick.disable_callbacks
   end
 
+  parallelize(workers: :number_of_processors)
+
   setup do
     I18n.locale = :en
     Rails.cache.clear
@@ -97,9 +97,6 @@ class ActiveSupport::TestCase
 
     Unpwn.offline = true
     OmniAuth.config.mock_auth.clear
-
-    Rubygem.reindex
-    Searchkick.disable_callbacks
 
     @launch_darkly = LaunchDarkly::Integrations::TestData.data_source
     config = LaunchDarkly::Config.new(data_source: @launch_darkly, send_events: false)
