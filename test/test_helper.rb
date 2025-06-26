@@ -279,6 +279,8 @@ end
 
 class ActionDispatch::IntegrationTest
   include OauthHelpers
+  include Capybara::DSL
+  include Capybara::Minitest::Assertions
 
   setup { host! Gemcutter::HOST }
 
