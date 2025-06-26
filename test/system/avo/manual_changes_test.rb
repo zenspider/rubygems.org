@@ -14,6 +14,7 @@ class Avo::ManualChangesSystemTest < ApplicationSystemTestCase
     visit avo.resources_log_tickets_path
     click_on "Create new log ticket"
 
+    page.find_by_id("log_ticket_key", wait: Capybara.default_max_wait_time) # Wait for input to be available.
     fill_in "Key", with: "key"
     fill_in "Directory", with: "dir"
     fill_in "Processed count", with: "0"
@@ -34,11 +35,11 @@ class Avo::ManualChangesSystemTest < ApplicationSystemTestCase
     assert_equal log_ticket, audit.auditable
     assert_equal "LogTicket", audit.auditable_type
     assert_equal "Manual create of LogTicket", audit.action
-    assert_equal(
+    assert_equal_hash(
       {
         "records" => {
           "gid://gemcutter/LogTicket/#{log_ticket.id}" => {
-            "changes" => log_ticket.attributes.transform_values { [nil, _1.as_json] },
+            "changes" => log_ticket.attributes.transform_values { [nil, it.as_json] },
             "unchanged" => {}
           }
         },
@@ -59,6 +60,7 @@ class Avo::ManualChangesSystemTest < ApplicationSystemTestCase
 
     find('div[data-field-id="auditable"]').click_on log_ticket.to_param
 
+    page.assert_text "pending"
     page.assert_title(/^#{log_ticket.to_param}/)
 
     click_on "Edit"
@@ -79,7 +81,7 @@ class Avo::ManualChangesSystemTest < ApplicationSystemTestCase
     assert_equal log_ticket, audit.auditable
     assert_equal "LogTicket", audit.auditable_type
     assert_equal "Manual update of LogTicket", audit.action
-    assert_equal(
+    assert_equal_hash(
       {
         "records" => {
           "gid://gemcutter/LogTicket/#{log_ticket.id}" => {
@@ -128,11 +130,11 @@ class Avo::ManualChangesSystemTest < ApplicationSystemTestCase
     assert_equal log_ticket.id, audit.auditable_id
     assert_equal "LogTicket", audit.auditable_type
     assert_equal "Manual destroy of LogTicket", audit.action
-    assert_equal(
+    assert_equal_hash(
       {
         "records" => {
           "gid://gemcutter/LogTicket/#{log_ticket.id}" => {
-            "changes" => log_ticket.attributes.transform_values { [_1, nil] },
+            "changes" => log_ticket.attributes.transform_values { [it, nil] },
             "unchanged" => {}
           }
         },

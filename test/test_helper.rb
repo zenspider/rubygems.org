@@ -31,11 +31,13 @@ require "helpers/email_helpers"
 require "helpers/es_helper"
 require "helpers/password_helpers"
 require "helpers/policy_helpers"
+require "helpers/rake_task_helper"
 require "helpers/webauthn_helpers"
 require "helpers/oauth_helpers"
 require "helpers/avo_helpers"
 require "webmock/minitest"
 require "phlex/testing/rails/view_helper"
+require "rake"
 
 # setup license early since some tests are testing Avo outside of requests
 # and license is set with first request
@@ -45,7 +47,9 @@ WebMock.disable_net_connect!(
   allow_localhost: true,
   allow: [
     "chromedriver.storage.googleapis.com",
-    "search" # Devcontainer OpenSearch container
+    "search", # DevContainer services
+    "selenium",
+    "rails-app"
   ]
 )
 WebMock.globally_stub_request(:after_local_stubs) do |request|
@@ -55,7 +59,7 @@ WebMock.globally_stub_request(:after_local_stubs) do |request|
 end
 
 Capybara.default_max_wait_time = 2
-Capybara.app_host = "#{Gemcutter::PROTOCOL}://#{Gemcutter::HOST}"
+Capybara.app_host = "#{Gemcutter::PROTOCOL}://#{Gemcutter::HOST}" if ENV["DEVCONTAINER_APP_HOST"].blank?
 Capybara.always_include_port = true
 Capybara.server_port = 31_337
 Capybara.server = :puma, { Silent: true }
@@ -150,6 +154,29 @@ class ActiveSupport::TestCase
     assert_equal actual.additional_type.new(user_agent_info:, **expected_additional), actual.additional
   end
 
+  # Hashes with different orders will still be equal according to assert_equal.
+  # However, when they are not equal, the output diff will print them in their
+  # original order which makes it hard to see what is actually different.
+  #
+  # Improve diff output by sorting any nested hashes within enumerables,
+  # leaving array order untouched.
+  def assert_equal_hash(expected, actual, context = "expected")
+    assert_equal deep_sort_hashes(expected), deep_sort_hashes(actual), "Expected equal elements in #{context}"
+  end
+
+  # sort the hash keys and recursively sort nested hashes within enumberables
+  def deep_sort_hashes(obj)
+    if obj.is_a?(Hash)
+      obj.map do |k, v|
+        [k, deep_sort_hashes(v)]
+      end.sort!.to_h
+    elsif obj.respond_to?(:map)
+      obj.map { |v| deep_sort_hashes(v) }
+    else
+      obj
+    end
+  end
+
   def headless_chrome_driver
     Capybara.current_driver = :selenium_chrome_headless
     Capybara.default_max_wait_time = 2
@@ -172,10 +199,14 @@ class ActiveSupport::TestCase
     fill_in "Password", with: @user.password
     click_button "Sign in"
 
+    assert page.has_content? "Dashboard"
+
     @authenticator = create_webauthn_credential_while_signed_in
 
     find(:css, ".header__popup-link").click
     click_on "Sign out"
+
+    assert page.has_content?("Sign in".upcase)
 
     @authenticator
   end
@@ -201,7 +232,7 @@ class ActiveSupport::TestCase
     click_on "Continue"
 
     visit edit_settings_path
-    find("div", text: credential_nickname, match: :first)
+    first("div", text: credential_nickname)
 
     @user.reload
     @authenticator
@@ -252,10 +283,31 @@ end
 
 class ActionDispatch::IntegrationTest
   include OauthHelpers
-  setup { host! Gemcutter::HOST }
-end
 
-Gemcutter::Application.load_tasks
+  setup { host! Gemcutter::HOST }
+
+  def assert_signed_in_as(user)
+    flunk "Expected to be signed in as User #{user.handle.inspect}, but was not signed in." unless request.env[:clearance].signed_in?
+    if request.env[:clearance].current_user != user
+      current_user = request.env[:clearance].current_user
+
+      flunk "Expected to be signed in as User: #{user.handle.inspect}\n" \
+            "Actually signed in as User: #{current_user.handle.inspect}"
+    end
+
+    assert_equal user, request.env[:clearance].current_user
+  end
+
+  def refute_signed_in
+    if request.env[:clearance].signed_in?
+      current_user = request.env[:clearance].current_user
+
+      flunk "Expected not to be signed in, but was signed in as User #{current_user.handle.inspect}"
+    end
+
+    assert_nil request.env[:clearance].current_user
+  end
+end
 
 # Force loading of ActionDispatch::SystemTesting::* helpers
 _ = ActionDispatch::SystemTestCase
@@ -281,13 +333,28 @@ class AdminPolicyTestCase < ActiveSupport::TestCase
     end
   end
 
+  def assert_association(user, record, association, _policy_class)
+    %w[create attach detach destroy edit].each do |action|
+      refute_authorizes(user, record, :"#{action}_#{association}?")
+    end
+
+    begin
+      @authorization_client.authorize(user, record, :avo_show?, policy_class: policy_class)
+
+      assert_authorizes(user, record, :"view_#{association}?")
+    rescue Avo::NotAuthorizedError
+      refute_authorizes(user, record, :"view_#{association}?")
+    end
+
+    # TODO: I'm not clear on what `record` is used in show_association?
+    # assert_authorizes(user, record, :"show_#{association}?")
+  end
+
   def policy_class
     nil
   end
 
-  def policy!(user, record)
-    @authorization_client.policy!(user, record)
-  end
+  delegate :policy!, to: :@authorization_client
 
   def policy_scope!(user, record)
     @authorization_client.apply_policy(user, record, policy_class: policy_class)

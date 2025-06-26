@@ -8,13 +8,13 @@ Rails.application.configure do
   config.content_security_policy do |policy|
     policy.default_src :self
     policy.font_src    :self, "https://fonts.gstatic.com"
-    policy.img_src     :self, "https://secure.gaug.es", "https://gravatar.com", "https://www.gravatar.com", "https://secure.gravatar.com",
+    policy.img_src     :self, "data:", "https://secure.gaug.es", "https://gravatar.com", "https://www.gravatar.com", "https://secure.gravatar.com",
       "https://*.fastly-insights.com", "https://avatars.githubusercontent.com"
     policy.object_src  :none
     # NOTE: This scirpt_src is overridden for all requests in ApplicationController
     # This is the baseline in case the override is ever skipped
     policy.script_src :self, "https://secure.gaug.es", "https://www.fastly-insights.com"
-    policy.style_src :self, "https://fonts.googleapis.com"
+    policy.style_src :self, :unsafe_inline, "https://fonts.googleapis.com"
     policy.connect_src :self, "https://s3-us-west-2.amazonaws.com/rubygems-dumps/", "https://*.fastly-insights.com", "https://fastly-insights.com",
       "https://api.github.com", "http://localhost:*"
     policy.form_action :self, "https://github.com/login/oauth/authorize"
@@ -55,4 +55,4 @@ Rails.application.config.content_security_policy_nonce_generator = lambda { |req
   request.session.send(:load_for_write!) # force session to be created
   request.session.id.to_s.presence || SecureRandom.base64(16)
 }
-Rails.application.config.content_security_policy_nonce_directives = %w[script-src style-src]
+Rails.application.config.content_security_policy_nonce_directives = %w[script-src]

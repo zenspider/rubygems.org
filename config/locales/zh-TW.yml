@@ -4,12 +4,13 @@ zh-TW:
   copied: 已複製
   copy_to_clipboard: 複製
   edit: 編輯
+  hide: 隱藏
   verification_expired:
   feed_latest: RubyGems.org | 最新 Gems
   feed_subscribed: RubyGems.org | 訂閱 Gems
   footer_about_html: RubyGems.org 是 Ruby 社群的 Gem 套件管理服務，讓您能立即地<a href="%{publish_docs}">發佈</a>及<a
     href="%{install_docs}">安裝</a>您的 Gem 套件，並且利用 <a href="%{api_docs}">API</a> 查詢及操作<a
-    href="%{gem_list}">可用 Gem</a> 的詳細資訊。<br />現在就<a href="%{contributing_docs}">成為貢獻者</a>，貢獻一己之力來改善本站。
+    href="%{gem_list}">可用 Gem</a> 的詳細資訊。<br>現在就<a href="%{contributing_docs}">成為貢獻者</a>，貢獻一己之力來改善本站。
   footer_sponsors_html: RubyGems.org 透過與廣大的 Ruby 社群合作而誕生。 <a href="https://www.fastly.com/">Fastly</a>
     提供頻寬和 CDN 支援， <a href="https://www.rubycentral.org/">Ruby Central</a> 支付設備費用，並為進行中的開發和營運工作提供資金。
     <a href="%{sponsors_page}">進一步了解我們的贊助商和它們是如何合作的</a>。
@@ -30,15 +31,21 @@ zh-TW:
   otp_incorrect: 您的 OTP 碼不正確。請檢查後再試一次。
   otp_missing: 您已啟用多重要素驗證，但是沒有輸入 OTP 碼。請輸入後再試一次。
   sign_in: 登入
+  sign_out: 登出
   sign_up: 註冊
+  by_signing_up:
+  sign_up_terms:
   dependency_list:
   multifactor_authentication: 多重要素驗證
   subtitle: Ruby 社群 Gem 套件管理平台
   this_rubygem_could_not_be_found: 找不到此 rubygem。
   time_ago: "%{duration} 前"
   title: RubyGems.org
-  update: 更新
+  total_downloads: 總下載次數
   try_again: 發生錯誤。請再試一次。
+  update: 更新
+  remove:
+  view_all: 查看全部
   advanced_search: 進階搜尋
   authenticate: 驗證
   helpers:
@@ -66,8 +73,12 @@ zh-TW:
         password: 密碼
       ownership/role:
         owner:
+        maintainer:
+      membership/role:
+        owner:
         admin:
         maintainer:
+        outside_contributor:
       api_key:
         oidc_api_key_role: OIDC API 金鑰角色
       oidc/id_token:
@@ -97,15 +108,12 @@ zh-TW:
             user_id:
               already_confirmed: 已是此 Gem 的擁有者
               already_invited: 已獲邀加入此 Gem
-        ownership_request:
-          attributes:
-            user_id:
-              taken:
-              existing:
         user:
           attributes:
             handle:
               invalid:
+            password:
+              bcrypt_length:
         version:
           attributes:
             gem_full_name:
@@ -169,7 +177,6 @@ zh-TW:
       yank_rubygem: 移除 rubygem
       add_owner: 新增擁有者
       remove_owner: 移除擁有者
-      update_owner:
       access_webhooks: 存取 Webhooks
       show_dashboard: 顯示儀表板
       configure_trusted_publishers:
@@ -177,6 +184,7 @@ zh-TW:
       save_key: 請注意，我們無法再次顯示您的 API 金鑰。新 API 金鑰：
       mfa: MFA
       expiration:
+      update_owner:
     new:
       new_api_key: 新 API 金鑰
     reset:
@@ -198,9 +206,9 @@ zh-TW:
       migrating_link_text: Gem 轉移
       mine: 我的 Gems
       my_subscriptions: 我的訂閱
-      no_owned_html: 您尚未發佈任何 Gem。可以閱讀 %{creating_link} 教學，或參考 %{migrating_link} 教學來將您的
-        Gem 從 RubyForge 遷移過來。
+      no_owned_html: 您尚未發佈任何 Gem。可以閱讀 %{creating_link} 教學。
       no_subscriptions_html: 您還沒有訂閱過 Gem，前往 %{gem_link} 來訂閱！
+      organizations:
       title: 控制台
   dependencies:
     show:
@@ -218,7 +226,7 @@ zh-TW:
   home:
     index:
       downloads_counting_html: 總下載次數
-      find_blurb: 搜尋、安裝以及發佈 RubyGems
+      find_blurb_html: 搜尋、安裝以及發佈 RubyGems
       learn:
         install_rubygems: 安裝 RubyGems
   layouts:
@@ -229,6 +237,7 @@ zh-TW:
         blog: 部落格
         contribute: 貢獻
         data: 資料
+        docs: 文件
         designed_by: 設計
         discussion_forum: 討論群組
         gems_served_by: 服務
@@ -237,12 +246,17 @@ zh-TW:
         hosted_by: 托管
         monitored_by: 監控
         optimized_by: 最佳化
+        policies:
+        releases:
         resolved_with: 解析
         security: 安全
         source_code: 原始碼
         statistics: 統計
         status: 狀態
         supported_by: 支持
+        supported_by_html: |
+          <a href="https://rubygems.org" class="font-semibold">RubyGems.org</a>
+          <br class="hidden lg:block"> 由以下支持
         tested_by: 測試
         tracking_by: 追蹤
         uptime: 上線時間
@@ -250,14 +264,22 @@ zh-TW:
         secured_by:
         looking_for_maintainers: 徵求維護者
       header:
+        profile: 個人檔案
         dashboard: 儀表板
         settings: 設定
         edit_profile: 編輯個人檔案
         search_gem_html: 搜尋 Gems&hellip;
-        sign_in: 登入
-        sign_out: 登出
-        sign_up: 註冊
+        members:
       mfa_banner_html: "\U0001F389 我們現在支援安全裝置了！<a href=\"/settings/edit#security-device\">設定</a>新的裝置來提升您的帳號安全。[了解詳情](部落格文章連結)！"
+  breadcrumbs:
+    home: 首頁
+    dashboard: 控制台
+    settings: 設定
+    org_name: 組織：%{name}
+    subscriptions: 訂閱
+    gems:
+    members:
+    invite_member:
   mailer:
     confirm_your_email: 已寄送連結，請點擊連結來確認您的電子郵件地址。
     confirmation_subject: "%{host} 電子郵件地址確認"
@@ -343,20 +365,6 @@ zh-TW:
       subtitle:
       body_html:
       body_text:
-    ownerhip_request_closed:
-      title: 所有權請求
-      subtitle: 嗨 %{handle}！
-      body_html: 感謝您申請 <strong>%{gem}</strong> 的所有權。我們很遺憾地通知您，您的所有權請求已被 Gem 擁有者關閉。
-    ownerhip_request_approved:
-      body_html: 恭喜！您對 <strong>%{gem}</strong> 的所有權請求已通過。您已加入 Gem 的擁有者名單。
-    new_ownership_requests:
-      body_html:
-        zero:
-        one:
-        other: "<strong>%{gem}</strong> 有 <em>%{count}</em> 項新所有權請求。請點擊下方按鈕來查看所有請求。"
-      button: 所有權請求
-      disable_notifications: 若要停止接收這些訊息，請更新您的
-      owners_page: 所有權
     web_hook_deleted:
       title: Webhook 遭刪除
       subject: 您在 RubyGems.org 上的 Webhook 遭到刪除
@@ -394,6 +402,44 @@ zh-TW:
       popular_gems: 熱門
     popular:
       title: 熱門新發佈
+  organizations:
+    index:
+      title:
+    show:
+      organization:
+      gems:
+      history:
+      members:
+      no_history:
+      no_gems:
+      add_member:
+      invite:
+    members:
+      create:
+        user_already_invited:
+        user_not_found:
+        member_invited:
+      update:
+        member_updated:
+      destroy:
+        member_removed:
+        cannot_remove_self:
+      index:
+        invite:
+        pending:
+      edit:
+        update:
+        delete:
+      new:
+        handle:
+        role:
+        create:
+        invite:
+    invitations:
+      show:
+        accept:
+        decline:
+        title_html:
   pages:
     about:
       contributors_amount: "%{count} 位 Ruby 愛好者"
@@ -421,14 +467,30 @@ zh-TW:
       title:
     download:
       title: 下載 RubyGems
-    faq:
-      title: 常見問題
-    migrate:
-      title: 轉移 Gems
     security:
       title: 安全性
     sponsors:
       title: 贊助者
+  policies:
+    index:
+      title:
+    terms-of-service:
+      title:
+    acceptable-use:
+      title:
+    copyright:
+      title:
+    privacy:
+      title:
+  policies_mailer:
+    policy_update_announcement:
+      subject:
+      title:
+      subtitle:
+    policy_update_review_closed:
+      subject:
+      title:
+      subtitle:
   password_mailer:
     change_password:
       closing:
@@ -448,6 +510,7 @@ zh-TW:
       success:
       failure_on_missing_email:
     update:
+      success:
       failure:
   multifactor_auths:
     session_expired: 您的登入頁面工作階段已過期。
@@ -516,7 +579,6 @@ zh-TW:
       title: 電子郵件通知
       update: 更新
       owner_heading: 所有權通知
-      owner_request_heading: 所有權請求通知
       push_heading: 推送通知
   webauthn_verifications:
     expired_or_already_used: 您所使用的連結中的權杖已過期或被使用。
@@ -533,7 +595,13 @@ zh-TW:
     failed_verification:
       title: 錯誤 - 驗證失敗
       close_browser: 請關閉此瀏覽器並重試。
+  organization_onboardings:
+    confirm:
+      success:
   owners:
+    edit:
+      role:
+      title:
     confirm:
       confirmed_email:
       token_expired: 確認權杖已過期。請從 Gem 頁面嘗試重新傳送權杖。
@@ -545,27 +613,24 @@ zh-TW:
       confirmed_at: 確認於
       added_by: 新增者
       action: 操作
+      role:
+      role_field:
       email_field:
       submit_button: 新增擁有者
       info: 新增或移除擁有者
       confirmed: 已確認
       pending: 待確認
       confirm_remove: 您確定要將此使用者從擁有者名單中移除嗎？
-      role:
-      role_field:
     resend_confirmation:
       resent_notice:
     create:
       success_notice: "%{handle} 已以未確認擁有者的身分加入。所有權存取將在使用者點擊傳送到他們的電子郵件地址的確認信後啟用。"
-    destroy:
-      removed_notice:
-      failed_notice: 無法移除 Gem 的唯一擁有者
-    edit:
-      role:
-      title:
     update:
       update_current_user_role:
       success_notice:
+    destroy:
+      removed_notice:
+      failed_notice: 無法移除 Gem 的唯一擁有者
     mfa_required: Gem 啟用了 MFA 要求，請設定您的帳號的 MFA。
   settings:
     edit:
@@ -605,11 +670,6 @@ zh-TW:
           ui_and_api: 使用者介面與 API (建議)
           ui_and_gem_signin: 使用者介面和 Gem 登入
   profiles:
-    adoptions:
-      no_ownership_calls:
-      no_ownership_requests: 您尚未建立任何所有權請求。
-      title: 認養
-      subtitle_html: 請求新維護者或所有權 <a class="adoption__blog__link" href="https://blog.rubygems.org/2022/01/19/rubygems-adoptions.html">(了解詳情)</a>
     edit:
       change_avatar:
       disabled_avatar_html:
@@ -682,7 +742,8 @@ zh-TW:
       reserved_namespace: 此命名空間被 rubygems.org 保留。
     dependencies:
       header: "%{title} 相依性套件"
-    gem_members:
+    release_info:
+      managed_by:
       authors_header: 作者
       self_no_mfa_warning_html:
       not_using_mfa_warning_show: "* 某些擁有者未使用多重要素驗證 (MFA)。點擊此處以顯示完整名單。"
@@ -694,6 +755,7 @@ zh-TW:
       sha_256_checksum: SHA 256 總和檢查碼
       signature_period: 簽名有效期
       expired: 已過期
+      provenance_header:
     version_navigation:
       previous_version: "← 上一版本"
       next_version: 下一版本 →
@@ -755,7 +817,6 @@ zh-TW:
     index:
       title: 統計資料
       all_time_most_downloaded: 歷史下載次數排行
-      total_downloads: 總下載次數
       total_gems: Gems 總數
       total_users: 總使用者數量
   users:
@@ -774,49 +835,6 @@ zh-TW:
         gemspec 指定。
     version:
       yanked: 已被移除
-  adoptions:
-    index:
-      title: 認養
-      subtitle_owner_html: 請求新的維護者加入 %{gem} <a class="adoption__blog__link" href="https://blog.rubygems.org/2022/01/19/rubygems-adoptions.html">(read
-        more)</a>
-      subtitle_user_html:
-      ownership_calls:
-      no_ownership_calls:
-  ownership_calls:
-    update:
-      success_notice:
-    create:
-      success_notice:
-    index:
-      title: 徵求維護者
-      subtitle_html: RubyGems 正在尋找新的維護者加入團隊 <a class="adoption__blog__link" href="https://blog.rubygems.org/2022/01/19/rubygems-adoptions.html">(了解詳情)</a>
-    share_requirements: 請說明您需要哪方面的協助
-    note_for_applicants:
-    created_by: 建立者
-    details:
-    apply: 申請
-    close: 關閉
-    markup_supported_html: <a class="adoption__rdoc__link" href="https://ruby.github.io/rdoc/RDoc/MarkupReference.html">支援
-      Rdoc 標記語言</a>
-    create_call:
-  ownership_requests:
-    create:
-      success_notice: 您的所有權請求已送出。
-    update:
-      approved_notice: 所有權請求已核准。%{name} 已加入擁有者名單。
-      closed_notice:
-    close:
-      success_notice:
-    ownership_requests: 所有權請求
-    note_for_owners:
-    your_ownership_requests: 您的所有權請求
-    close_all: 全部關閉
-    approve:
-    gems_published: 已發布的 Gems
-    created_at: 建立於
-    no_ownership_requests: 您的專案的加入請求將在此顯示。
-    create_req: 建立所有權請求
-    signin_to_create_html:
   webauthn_credentials:
     callback:
       success: 您已成功註冊安全裝置。

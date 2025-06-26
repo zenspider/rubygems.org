@@ -2,6 +2,7 @@
 
 class VersionManifest
   DEFAULT_DIGEST = "sha256"
+  MAX_ENTRIES = 1000
 
   attr_reader :version, :contents
 
@@ -51,13 +52,25 @@ class VersionManifest
 
   # @param [Gem::Package] package
   def store_package(package)
+    read_and_store_entries(package)
+    store_spec package.spec
+  end
+
+  def read_and_store_entries(package)
+    magic = Magic.open(Magic::MIME)
+    count = 0
     entries = GemPackageEnumerator.new(package).filter_map do |tar_entry|
-      Rails.error.handle(context: { gem: package.spec.full_name, entry: tar_entry.full_name }) do
-        RubygemContents::Entry.from_tar_entry(tar_entry)
-      end
+      count += 1
+      # bail completely if the gem is too large.
+      # this is better than producing a partial manifest,
+      # because that could trick someone into thinking they
+      # are seeing the entire gem when they are not.
+      return if count > MAX_ENTRIES # rubocop:disable Lint/NonLocalExitFromIterator
+      RubygemContents::Entry.from_tar_entry(tar_entry, magic:)
     end
     store_entries entries
-    store_spec package.spec
+  ensure
+    magic.close
   end
 
   # Writing version contents is done in one pass, collecting all the checksums

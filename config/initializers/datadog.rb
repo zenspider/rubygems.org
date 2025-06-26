@@ -1,7 +1,5 @@
 require "app_revision"
 
-return if Rails.env.local? # Don't enable Datadog in local Development & Test environments
-
 Datadog.configure do |c|
   # unified service tagging
 
@@ -11,7 +9,8 @@ Datadog.configure do |c|
 
   # Enabling datadog functionality
 
-  enabled = ENV["DD_AGENT_HOST"].present? && !defined?(Rails::Console)
+  running_locally = Rails.env.local? || defined?(Rails::Console)
+  enabled = !running_locally || ENV["DD_AGENT_HOST"].present?
   c.runtime_metrics.enabled = enabled
   c.profiling.enabled = enabled
   c.tracing.enabled = enabled
@@ -43,7 +42,7 @@ Datadog.configure do |c|
   c.tracing.instrument :faraday, split_by_domain: true, service_name: c.service
   c.tracing.instrument :http, split_by_domain: true, service_name: c.service
   c.tracing.instrument :opensearch, service_name: c.service
-  c.tracing.instrument :pg
+  c.tracing.instrument :pg, comment_propagation: 'full'
   c.tracing.instrument :rails, request_queuing: true
   c.tracing.instrument :shoryuken if defined?(Shoryuken)
 end

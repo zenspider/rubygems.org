@@ -8,6 +8,66 @@ class PushTest < ActionDispatch::IntegrationTest
     @key = "12345"
     @user = create(:user)
     create(:api_key, owner: @user, key: @key, scopes: %i[push_rubygem])
+
+    stub_request(:get, "https://tuf-repo-cdn.sigstore.dev/10.root.json")
+      .to_return(status: 404, body: "", headers: {})
+  end
+
+  test "multipart" do
+    rubygem = create(:rubygem, name: "sigstore", number: "0.0.1")
+    create(:ownership, rubygem: rubygem, user: @user)
+
+    rubygem_trusted_publisher = create(:oidc_rubygem_trusted_publisher, rubygem: rubygem)
+    rubygem_trusted_publisher.trusted_publisher.update!(
+      repository_owner: "sigstore-conformance",
+      repository_name: "extremely-dangerous-public-oidc-beacon",
+      workflow_filename: "extremely-dangerous-oidc-beacon.yml"
+    )
+
+    @key = "543321"
+    create(:api_key, owner: rubygem_trusted_publisher.trusted_publisher, key: @key, scopes: %i[push_rubygem])
+
+    signing_jwt = ["", {
+      aud: "sigstore",
+      iat: Time.zone.now.to_i - 60,
+      exp: Time.zone.now.to_i + 60,
+      nbf: Time.zone.now.to_i - 60,
+      iss: "sigstore-conformance",
+      sub: "sigstore-conformance"
+    }.to_json, ""].map { Base64.strict_encode64(it) }.join(".")
+
+    Pusher.any_instance.stubs(:sigstore_signing_jwt).returns(signing_jwt)
+    Sigstore::Signer.any_instance.stubs(:sign).returns({})
+    bundle = JSON.parse(File.read(gem_file("sigstore-1.0.0.gem.sigstore.json")))
+
+    post api_v1_rubygems_path,
+         params: { "gem" => Rack::Test::UploadedFile.new(gem_file("sigstore-1.0.0.gem"), "application/octet-stream"),
+                   "attestations" => JSON.dump([bundle]) },
+         headers: { "CONTENT_TYPE" => "multipart/mixed", "HTTP_AUTHORIZATION" => @key }
+
+    assert_response :success, response.body
+
+    get info_path("sigstore")
+    info_file = response.body
+
+    assert_response :success
+    assert_equal <<~INFO, info_file
+      ---
+      0.0.1 |checksum:b5d4045c3f466fa91fe2cc6abe79232a1a57cdf104f7a26e716e0a1e2789df78,ruby:>= 2.0.0,rubygems:>= 2.6.3
+      1.0.0 |checksum:#{Digest::SHA256.hexdigest File.binread(gem_file('sigstore-1.0.0.gem'))}
+    INFO
+    assert_equal Digest::MD5.hexdigest(info_file), Rubygem.find_by!(name: "sigstore").versions.find_by(number: "1.0.0").info_checksum
+
+    get api_v2_rubygem_version_path("sigstore", "1.0.0", format: "json")
+
+    assert_response :success
+
+    assert_equal [["application/vnd.dev.sigstore.bundle.v0.3+json", bundle]], Attestation.pluck(:media_type, :body)
+
+    get api_v1_attestation_path("sigstore-1.0.0", format: "json")
+
+    assert_response :success
+    assert_equal [bundle], response.parsed_body
   end
 
   test "pushing a gem" do
@@ -16,6 +76,7 @@ class PushTest < ActionDispatch::IntegrationTest
     push_gem "sandworm-1.0.0.gem"
 
     assert_response :success
+    perform_enqueued_jobs
 
     get rubygem_path("sandworm")
 
@@ -23,6 +84,7 @@ class PushTest < ActionDispatch::IntegrationTest
     assert page.has_content?("sandworm")
     assert page.has_content?("1.0.0")
     assert page.has_content?("Pushed by")
+    assert page.has_link? "Homepage", href: "http://example.com/sandworm"
 
     css = %(div.gem__users a[alt=#{@user.handle}])
 
@@ -46,7 +108,11 @@ class PushTest < ActionDispatch::IntegrationTest
 
     refute_nil RubygemFs.instance.get("gems/sandworm-2.0.0.gem")
     refute_nil RubygemFs.instance.get("quick/Marshal.4.8/sandworm-2.0.0.gemspec.rz")
-    assert_equal({ checksum_sha256: rubygem.versions.find_by!(full_name: "sandworm-2.0.0").sha256, key: "gems/sandworm-2.0.0.gem" },
+    checksum_sha256 = rubygem.versions.find_by!(full_name: "sandworm-2.0.0").sha256
+
+    assert_equal({ checksum_sha256:, key: "gems/sandworm-2.0.0.gem",
+                   metadata: { "gem" => "sandworm", "version" => "2.0.0", "platform" => "ruby",
+                               "surrogate-key" => "gem/sandworm", "sha256" => checksum_sha256 } },
                  RubygemFs.instance.head("gems/sandworm-2.0.0.gem"))
 
     spec = Gem::Package.new("sandworm-2.0.0.gem").spec
@@ -77,7 +143,7 @@ class PushTest < ActionDispatch::IntegrationTest
 
     push_gem "sandworm-2.0.0.gem"
 
-    assert_response :success
+    assert_response :success, response.body
 
     perform_enqueued_jobs
     perform_enqueued_jobs only: ActionMailer::MailDeliveryJob
@@ -343,6 +409,16 @@ class PushTest < ActionDispatch::IntegrationTest
 
     assert_response :forbidden
     assert_match(/You have added cert_chain in gemspec but signature was empty/, response.body)
+  end
+
+  test "publishing a gem with an invalid homepage" do
+    build_gem "sandworm", "2.0.0" do |gemspec|
+      gemspec.homepage = "not a valid url"
+    end
+    push_gem "sandworm-2.0.0.gem"
+
+    assert_response :unprocessable_content
+    assert_match(/is not a valid HTTP URI/, response.body)
   end
 
   setup do

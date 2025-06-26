@@ -62,6 +62,16 @@ class ApplicationController < ActionController::Base
     super
   end
 
+  def breadcrumbs
+    @breadcrumbs ||= []
+  end
+  helper_method :breadcrumbs
+
+  def add_breadcrumb(name, link = nil)
+    breadcrumbs << [name, link]
+  end
+  helper_method :add_breadcrumb
+
   protected
 
   def http_basic_authentication_options_valid?(**options)

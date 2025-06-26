@@ -27,6 +27,7 @@ class User < ApplicationRecord
   scope :not_deleted, -> { kept }
   scope :deleted, -> { with_discarded.discarded }
   scope :with_deleted, -> { with_discarded }
+  scope :confirmed, -> { where(email_confirmed: true) }
 
   has_many :ownerships, -> { confirmed }, dependent: :destroy, inverse_of: :user
 
@@ -49,12 +50,6 @@ class User < ApplicationRecord
   has_many :unconfirmed_ownerships, -> { unconfirmed }, dependent: :destroy, inverse_of: :user, class_name: "Ownership"
   has_many :api_keys, dependent: :destroy, inverse_of: :owner, as: :owner
 
-  has_many :ownership_calls, -> { opened }, dependent: :destroy, inverse_of: :user
-  has_many :closed_ownership_calls, -> { closed }, dependent: :destroy, inverse_of: :user, class_name: "OwnershipCall"
-  has_many :ownership_requests, -> { opened }, dependent: :destroy, inverse_of: :user
-  has_many :closed_ownership_requests, -> { closed }, dependent: :destroy, inverse_of: :user, class_name: "OwnershipRequest"
-  has_many :approved_ownership_requests, -> { approved }, dependent: :destroy, inverse_of: :user, class_name: "OwnershipRequest"
-
   has_many :audits, as: :auditable, dependent: :nullify
   has_many :rubygem_events, through: :rubygems, source: :events
 
@@ -66,6 +61,8 @@ class User < ApplicationRecord
 
   has_many :memberships, dependent: :destroy
   has_many :organizations, through: :memberships
+
+  has_many :organization_onboardings, foreign_key: :created_by_id, dependent: :nullify, inverse_of: :created_by
 
   validates :email, length: { maximum: Gemcutter::MAX_FIELD_LENGTH }, format: { with: URI::MailTo::EMAIL_REGEXP }, presence: true,
     uniqueness: { case_sensitive: false }
@@ -81,7 +78,7 @@ class User < ApplicationRecord
   }, allow_nil: true, length: { within: 0..20 }
 
   validates :password,
-    length: { within: 10..200 },
+    length: { minimum: 10 },
     unpwn: true,
     allow_blank: true, # avoid double errors with can't be blank
     unless: :skip_password_validation?
@@ -90,6 +87,7 @@ class User < ApplicationRecord
 
   validate :unconfirmed_email_uniqueness
   validate :toxic_email_domain, on: :create
+  validate :password_byte_length
 
   def self.authenticate(who, password)
     # Avoid exceptions when string is invalid in the given encoding, _or_ cannot be converted
@@ -137,10 +135,6 @@ class User < ApplicationRecord
 
   def self.ownership_notifiable_owners
     where(ownerships: { owner_notifier: true })
-  end
-
-  def self.ownership_request_notifiable_owners
-    where(ownerships: { ownership_request_notifier: true })
   end
 
   def self.normalize_email(email)
@@ -208,12 +202,12 @@ class User < ApplicationRecord
 
   def confirm_email!
     return false if unconfirmed_email && !update_email
-    update!(email_confirmed: true, confirmation_token: nil)
+    update!(email_confirmed: true, confirmation_token: nil, token_expires_at: Time.zone.now)
   end
 
-  # confirmation token expires after 15 minutes
+  # confirmation token expires after 3 hours
   def valid_confirmation_token?
-    token_expires_at > Time.zone.now
+    confirmation_token.present? && Time.zone.now.before?(token_expires_at)
   end
 
   def generate_confirmation_token(reset_unconfirmed_email: true)
@@ -321,14 +315,17 @@ class User < ApplicationRecord
     errors.add(:email, I18n.t("activerecord.errors.messages.blocked", domain: domain)) if toxic
   end
 
+  def password_byte_length
+    return if skip_password_validation? || password.blank?
+    errors.add(:password, :bcrypt_length) if password.bytesize > 72
+  end
+
   def expire_all_api_keys
     api_keys.expire_all!
   end
 
   def destroy_associations_for_discard
     ownerships.unscope(where: :confirmed_at).destroy_all
-    ownership_requests.update_all(status: :closed)
-    ownership_calls.unscope(where: :status).destroy_all
     oidc_pending_trusted_publishers.destroy_all
     subscriptions.destroy_all
     web_hooks.destroy_all

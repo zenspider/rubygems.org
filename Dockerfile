@@ -1,9 +1,9 @@
 # syntax = docker/dockerfile:1.10
 
 # Make sure RUBY_VERSION matches the Ruby version in .ruby-version and Gemfile
-ARG RUBY_VERSION=3.3.5
+ARG RUBY_VERSION=3.4.4
 ARG ALPINE_VERSION=3.20
-FROM ruby:$RUBY_VERSION-alpine${ALPINE_VERSION} as base
+FROM ruby:$RUBY_VERSION-alpine${ALPINE_VERSION} AS base
 
 # Install packages
 RUN --mount=type=cache,id=dev-apk-cache,sharing=locked,target=/var/cache/apk \
@@ -28,7 +28,7 @@ ARG RUBYGEMS_VERSION
 RUN gem update --system ${RUBYGEMS_VERSION} --no-document
 
 # Throw-away build stage to reduce size of final image
-FROM base as build
+FROM base AS build
 
 # Install packages
 RUN \
@@ -41,6 +41,7 @@ RUN \
   linux-headers \
   zlib-dev \
   tzdata \
+  yaml-dev \
   git
 
 WORKDIR /app
@@ -56,7 +57,7 @@ RUN --mount=type=cache,id=bld-gem-cache,sharing=locked,target=/srv/vendor \
   set -ex
 
   bundle config set --local without 'development test'
-  bundle config set --local with ${BUNDLE_WITH:-}
+  [ -z ${BUNDLE_WITH:-} ] || bundle config set --local with ${BUNDLE_WITH}
   bundle config set --local path /srv/vendor
   bundle install --jobs 20 --retry 5
   bundle clean
@@ -74,7 +75,7 @@ RUN --mount=type=cache,id=bld-gem-cache,sharing=locked,target=/srv/vendor \
   find /app/vendor/ruby -type f -name '*.js.map' -exec rm {} \;
 
   # Remove ruby 2.x source code
-  find /app/vendor/ruby/*/gems/debase-ruby_core_source-*/lib/debase/ruby_core_source -maxdepth 1 -type d -name 'ruby-2.*' -exec rm -r {} \;
+  find /app/vendor/ruby/*/gems/datadog-ruby_core_source-*/lib/datadog/ruby_core_source -maxdepth 1 -type d -name 'ruby-2.*' -exec rm -r {} \;
 
   # Remove datadog precompiled binaries for other platforms
   find /app/vendor/ruby/*/gems/libdatadog-*/vendor/libdatadog-*/ -mindepth 1 -maxdepth 1 -not -name "$(ruby -e 'puts RbConfig::CONFIG["arch"]')" -exec rm -r {} \;

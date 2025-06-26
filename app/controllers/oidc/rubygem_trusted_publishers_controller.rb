@@ -41,12 +41,12 @@ class OIDC::RubygemTrustedPublishersController < ApplicationController
   private
 
   def create_params
-    params.permit(
+    params.expect(
       create_params_key => [
         :trusted_publisher_type,
-        { trusted_publisher_attributes: @trusted_publisher_type.permitted_attributes }
+        trusted_publisher_attributes: @trusted_publisher_type.permitted_attributes
       ]
-    ).require(create_params_key)
+    )
   end
 
   def create_params_key = :oidc_rubygem_trusted_publisher
@@ -57,7 +57,7 @@ class OIDC::RubygemTrustedPublishersController < ApplicationController
   end
 
   def find_rubygem_trusted_publisher
-    @rubygem_trusted_publisher = authorize @rubygem.oidc_rubygem_trusted_publishers.find(params.permit(:id).require(:id))
+    @rubygem_trusted_publisher = authorize @rubygem.oidc_rubygem_trusted_publishers.find(params[:id])
   end
 
   def gh_actions_trusted_publisher
@@ -73,8 +73,8 @@ class OIDC::RubygemTrustedPublishersController < ApplicationController
   end
 
   def workflow_filename(repo)
-    paths = Octokit.contents(repo, path: ".github/workflows").lazy.select { _1.type == "file" }.map(&:name).grep(/\.ya?ml\z/)
-    paths.max_by { |path| [path.include?("release"), path.include?("push")].map! { (_1 && 1) || 0 } }
+    paths = Octokit.contents(repo, path: ".github/workflows").lazy.select { it.type == "file" }.map(&:name).grep(/\.ya?ml\z/)
+    paths.max_by { |path| [path.include?("release"), path.include?("push")].map! { (it && 1) || 0 } }
   rescue Octokit::NotFound, Octokit::InvalidRepository
     nil
   end

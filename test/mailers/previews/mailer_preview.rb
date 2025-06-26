@@ -103,6 +103,10 @@ class MailerPreview < ActionMailer::Preview
     OwnersMailer.with(ownership: ownership, authorizer: owner).owner_updated
   end
 
+  def policy_update_announcement
+    PoliciesMailer.policy_update_announcement(User.last)
+  end
+
   def api_key_created
     api_key = ApiKey.where(owner_type: "User").last
     Mailer.api_key_created(api_key.id)
@@ -116,22 +120,6 @@ class MailerPreview < ActionMailer::Preview
   def api_key_revoked
     api_key = ApiKey.where(owner_type: "User").last
     Mailer.api_key_revoked(api_key.user.id, api_key.name, api_key.scopes.to_sentence, "https://example.com")
-  end
-
-  def new_ownership_requests
-    gem = Rubygem.order(updated_at: :desc).last
-    user = gem.owners.last
-    OwnersMailer.new_ownership_requests(gem.id, user.id)
-  end
-
-  def ownership_request_closed
-    ownership_request = OwnershipRequest.last
-    OwnersMailer.ownership_request_closed(ownership_request.id)
-  end
-
-  def ownership_request_approved
-    ownership_request = OwnershipRequest.last
-    OwnersMailer.ownership_request_approved(ownership_request.id)
   end
 
   def webhook_deleted_global

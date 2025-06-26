@@ -7,18 +7,6 @@ class ProfileTest < ApplicationSystemTestCase
     @user = create(:user, email: "nick@example.com", password: PasswordHelpers::SECURE_TEST_PASSWORD, handle: "nick1", mail_fails: 1)
   end
 
-  def sign_in
-    visit sign_in_path
-    fill_in "Email or Username", with: @user.reload.email
-    fill_in "Password", with: @user.password
-    click_button "Sign in"
-  end
-
-  def sign_out
-    page.driver.browser.clear_cookies # rack-test specific
-    visit "/"
-  end
-
   test "changing handle" do
     sign_in
 
@@ -31,7 +19,7 @@ class ProfileTest < ApplicationSystemTestCase
     fill_in "Password", with: PasswordHelpers::SECURE_TEST_PASSWORD
     click_button "Update"
 
-    assert page.has_content? "nick2"
+    assert_equal "nick2", page.find_field("user_handle").value
   end
 
   test "changing to an existing handle" do
@@ -88,7 +76,7 @@ class ProfileTest < ApplicationSystemTestCase
     assert_changes -> { @user.reload.mail_fails }, from: 1, to: 0 do
       visit link
 
-      assert page.has_selector? "#flash_notice", text: "Your email address has been verified"
+      assert page.has_content?("Your email address has been verified")
       visit edit_profile_path
 
       assert page.has_selector? "input[value='nick2@example.com']"
@@ -127,10 +115,33 @@ class ProfileTest < ApplicationSystemTestCase
     fill_in "Password", with: PasswordHelpers::SECURE_TEST_PASSWORD
     click_button "Update"
 
-    click_link "Sign out"
+    sign_out
     visit profile_path("nick1")
 
     assert page.has_link?("@nick1", href: "https://twitter.com/nick1")
+  end
+
+  test "adding X(formerly Twitter) username without filling in your password" do
+    twitter_username = "nick1twitter"
+
+    sign_in
+    visit profile_path("nick1")
+
+    click_link "Edit Profile"
+    fill_in "user_twitter_username", with: twitter_username
+
+    assert_equal twitter_username, page.find_by_id("user_twitter_username").value
+
+    click_button "Update"
+
+    # Verify that the newly added Twitter username is still on the form so that the user does not need to re-enter it
+    assert_equal twitter_username, page.find_by_id("user_twitter_username").value
+
+    fill_in "Password", with: PasswordHelpers::SECURE_TEST_PASSWORD
+    click_button "Update"
+
+    assert page.has_content? "Your profile was updated."
+    assert_equal twitter_username, page.find_by_id("user_twitter_username").value
   end
 
   test "deleting profile" do
@@ -139,8 +150,10 @@ class ProfileTest < ApplicationSystemTestCase
     click_link "Edit Profile"
 
     click_button "Delete"
-    fill_in "Password", with: PasswordHelpers::SECURE_TEST_PASSWORD
-    click_button "Confirm"
+    accept_confirm do
+      fill_in "Password", with: PasswordHelpers::SECURE_TEST_PASSWORD
+      click_button "Confirm"
+    end
 
     assert page.has_content? "Your account deletion request has been enqueued. " \
                              "We will send you a confirmation mail when your request has been processed."
@@ -150,33 +163,24 @@ class ProfileTest < ApplicationSystemTestCase
     sign_in
     visit delete_profile_path
 
-    fill_in "Password", with: PasswordHelpers::SECURE_TEST_PASSWORD
-    click_button "Confirm"
+    accept_confirm do
+      fill_in "Password", with: PasswordHelpers::SECURE_TEST_PASSWORD
+      click_button "Confirm"
+    end
+
+    assert page.has_content?("Your account deletion request has been enqueued.")
 
     sign_in
     visit delete_profile_path
 
     2.times { perform_enqueued_jobs }
 
-    fill_in "Password", with: PasswordHelpers::SECURE_TEST_PASSWORD
-    click_button "Confirm"
+    accept_confirm do
+      fill_in "Password", with: PasswordHelpers::SECURE_TEST_PASSWORD
+      click_button "Confirm"
+    end
 
     assert_no_enqueued_jobs
-  end
-
-  test "seeing ownership calls and requests" do
-    rubygem = create(:rubygem, owners: [@user], number: "1.0.0")
-    requested_gem = create(:rubygem, number: "2.0.0")
-    create(:ownership_call, rubygem: rubygem, user: @user, note: "special note")
-    create(:ownership_request, rubygem: requested_gem, user: @user, note: "request note")
-
-    sign_in
-    visit profile_path("nick1")
-    click_link "Adoptions"
-
-    assert page.has_link?(rubygem.name, href: "/gems/#{rubygem.name}")
-    assert page.has_content? "special note"
-    assert page.has_content? "request note"
   end
 
   test "seeing the gems ordered by downloads" do
@@ -189,9 +193,9 @@ class ProfileTest < ApplicationSystemTestCase
 
     downloads = page.all(".gems__gem__downloads__count")
 
-    assert_equal("7 Downloads", downloads[0].text)
-    assert_equal("5 Downloads", downloads[1].text)
-    assert_equal("2 Downloads", downloads[2].text)
+    assert_equal("7\nDOWNLOADS", downloads[0].text)
+    assert_equal("5\nDOWNLOADS", downloads[1].text)
+    assert_equal("2\nDOWNLOADS", downloads[2].text)
   end
 
   test "seeing the latest version when there is a newer previous version" do

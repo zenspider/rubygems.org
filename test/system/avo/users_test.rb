@@ -48,7 +48,7 @@ class Avo::UsersSystemTest < ApplicationSystemTestCase
     page.assert_text audit.id
     assert_equal "User", audit.auditable_type
     assert_equal "Reset User 2FA", audit.action
-    assert_equal(
+    assert_equal_hash(
       {
         "records" => {
           "gid://gemcutter/User/#{user.id}" => {
@@ -64,7 +64,7 @@ class Avo::UsersSystemTest < ApplicationSystemTestCase
               .transform_values(&:as_json)
           },
           event.to_gid.as_json => {
-            "changes" => event.attributes.transform_values { [nil, _1.as_json] },
+            "changes" => event.attributes.transform_values { [nil, it.as_json] },
             "unchanged" => {}
           }
         },
@@ -123,14 +123,14 @@ class Avo::UsersSystemTest < ApplicationSystemTestCase
     page.assert_text audit.id
     assert_equal "User", audit.auditable_type
     assert_equal "Block User", audit.action
-    assert_equal(
+    assert_equal_hash(
       {
         "records" => {
           "gid://gemcutter/User/#{user.id}" => {
             "changes" => {
               "email" => [user_attributes[:email], user.email],
               "updated_at" => [user_attributes[:updated_at].as_json, user.updated_at.as_json],
-              "confirmation_token" => [user_attributes[:confirmation_token], nil],
+              "token_expires_at" => [user_attributes[:token_expires_at].as_json, user.token_expires_at.as_json],
               "mfa_level" => %w[ui_and_api disabled],
               "totp_seed" => [user_attributes[:totp_seed], nil],
               "mfa_hashed_recovery_codes" => [user_attributes[:mfa_hashed_recovery_codes], []],
@@ -143,26 +143,26 @@ class Avo::UsersSystemTest < ApplicationSystemTestCase
               .except(
                 "api_key",
                 "blocked_email",
-                "confirmation_token",
                 "email",
                 "encrypted_password",
                 "mfa_level",
                 "mfa_hashed_recovery_codes",
+                "token_expires_at",
                 "totp_seed",
                 "remember_token",
                 "updated_at"
               ).transform_values(&:as_json)
           },
           email_added_event.to_gid.as_json => {
-            "changes" => email_added_event.attributes.transform_values { [nil, _1.as_json] },
+            "changes" => email_added_event.attributes.transform_values { [nil, it.as_json] },
             "unchanged" => {}
           },
           email_verified_event.to_gid.as_json => {
-            "changes" => email_verified_event.attributes.transform_values { [nil, _1.as_json] },
+            "changes" => email_verified_event.attributes.transform_values { [nil, it.as_json] },
             "unchanged" => {}
           },
           password_changed_event.to_gid.as_json => {
-            "changes" => password_changed_event.attributes.transform_values { [nil, _1.as_json] },
+            "changes" => password_changed_event.attributes.transform_values { [nil, it.as_json] },
             "unchanged" => {}
           }
         },
@@ -208,7 +208,7 @@ class Avo::UsersSystemTest < ApplicationSystemTestCase
       page.assert_text audit.id
       assert_equal "User", audit.auditable_type
       assert_equal "Reset Api Key", audit.action
-      assert_equal(
+      assert_equal_hash(
         {
           "records" => {
             "gid://gemcutter/User/#{user.id}" => {
@@ -223,7 +223,7 @@ class Avo::UsersSystemTest < ApplicationSystemTestCase
                 ).transform_values(&:as_json)
             },
             event.to_gid.as_json => {
-              "changes" => event.attributes.transform_values { [nil, _1.as_json] },
+              "changes" => event.attributes.transform_values { [nil, it.as_json] },
               "unchanged" => {}
             }
           },
@@ -294,11 +294,11 @@ class Avo::UsersSystemTest < ApplicationSystemTestCase
     end
     rubygem_updated_at_changes = rubygem_audit["gid://gemcutter/Rubygem/#{rubygem.id}"]["changes"]["updated_at"]
 
-    assert_equal(
+    assert_equal_hash(
       {
         "records" => {
           "gid://gemcutter/Deletion/#{deletion.id}" => {
-            "changes" => deletion.attributes.transform_values { [nil, _1.as_json] },
+            "changes" => deletion.attributes.transform_values { [nil, it.as_json] },
             "unchanged" => {}
           },
           "gid://gemcutter/Version/#{version.id}" => {
@@ -328,7 +328,7 @@ class Avo::UsersSystemTest < ApplicationSystemTestCase
               ).transform_values(&:as_json)
           },
           version_yanked_event.to_gid.to_s => {
-            "changes" => version_yanked_event.attributes.transform_values { [nil, _1] }.as_json,
+            "changes" => version_yanked_event.attributes.transform_values { [nil, it] }.as_json,
             "unchanged" => {}
           }
         },
@@ -398,11 +398,11 @@ class Avo::UsersSystemTest < ApplicationSystemTestCase
     password_changed_event = user.events.where(tag: Events::UserEvent::PASSWORD_CHANGED).sole
     version_yanked_event = rubygem.events.where(tag: Events::RubygemEvent::VERSION_YANKED).sole
 
-    assert_equal(
+    assert_equal_hash(
       {
         "records" => {
           "gid://gemcutter/Deletion/#{deletion.id}" => {
-            "changes" => deletion.attributes.transform_values { [nil, _1.as_json] },
+            "changes" => deletion.attributes.transform_values { [nil, it.as_json] },
             "unchanged" => {}
           },
           "gid://gemcutter/Version/#{version.id}" => {
@@ -433,45 +433,45 @@ class Avo::UsersSystemTest < ApplicationSystemTestCase
           },
           "gid://gemcutter/User/#{user.id}" => {
             "changes" => {
-              "email" => [user_attributes[:email], user.email],
-              "updated_at" => [user_attributes[:updated_at].as_json, user.updated_at.as_json],
-              "confirmation_token" => [user_attributes[:confirmation_token], nil],
-              "mfa_level" => %w[ui_and_api disabled],
-              "totp_seed" => [user_attributes[:totp_seed], nil],
-              "mfa_hashed_recovery_codes" => [user_attributes[:mfa_hashed_recovery_codes], []],
-              "encrypted_password" => [user_attributes[:encrypted_password], user.encrypted_password],
               "api_key" => ["secret123", nil],
+              "blocked_email" => [nil, user_attributes[:email]],
+              "email" => [user_attributes[:email], user.email],
+              "encrypted_password" => [user_attributes[:encrypted_password], user.encrypted_password],
+              "mfa_hashed_recovery_codes" => [user_attributes[:mfa_hashed_recovery_codes], []],
+              "mfa_level" => %w[ui_and_api disabled],
               "remember_token" => [user_attributes[:remember_token], nil],
-              "blocked_email" => [nil, user_attributes[:email]]
+              "token_expires_at" => [user_attributes[:token_expires_at].as_json, user.token_expires_at.as_json],
+              "totp_seed" => [user_attributes[:totp_seed], nil],
+              "updated_at" => [user_attributes[:updated_at].as_json, user.updated_at.as_json]
             },
             "unchanged" => user.attributes
               .except(
                 "api_key",
                 "blocked_email",
-                "confirmation_token",
                 "email",
                 "encrypted_password",
                 "mfa_level",
                 "mfa_hashed_recovery_codes",
+                "token_expires_at",
                 "totp_seed",
                 "remember_token",
                 "updated_at"
               ).transform_values(&:as_json)
           },
           email_added_event.to_gid.as_json => {
-            "changes" => email_added_event.attributes.transform_values { [nil, _1.as_json] },
+            "changes" => email_added_event.attributes.transform_values { [nil, it.as_json] },
             "unchanged" => {}
           },
           email_verified_event.to_gid.as_json => {
-            "changes" => email_verified_event.attributes.transform_values { [nil, _1.as_json] },
+            "changes" => email_verified_event.attributes.transform_values { [nil, it.as_json] },
             "unchanged" => {}
           },
           password_changed_event.to_gid.as_json => {
-            "changes" => password_changed_event.attributes.transform_values { [nil, _1.as_json] },
+            "changes" => password_changed_event.attributes.transform_values { [nil, it.as_json] },
             "unchanged" => {}
           },
           version_yanked_event.to_gid.as_json => {
-            "changes" => version_yanked_event.attributes.transform_values { [nil, _1.as_json] },
+            "changes" => version_yanked_event.attributes.transform_values { [nil, it.as_json] },
             "unchanged" => {}
           }
         },
@@ -519,7 +519,7 @@ class Avo::UsersSystemTest < ApplicationSystemTestCase
       page.assert_text audit.id
       assert_equal "User", audit.auditable_type
       assert_equal "Change User Email", audit.action
-      assert_equal(
+      assert_equal_hash(
         {
           "records" => {
             "gid://gemcutter/User/#{user.id}" => {
@@ -540,11 +540,11 @@ class Avo::UsersSystemTest < ApplicationSystemTestCase
                 ).transform_values(&:as_json)
             },
             email_added_event.to_gid.as_json => {
-              "changes" => email_added_event.attributes.transform_values { [nil, _1.as_json] },
+              "changes" => email_added_event.attributes.transform_values { [nil, it.as_json] },
               "unchanged" => {}
             },
             email_sent_event.to_gid.as_json => {
-              "changes" => email_sent_event.attributes.transform_values { [nil, _1.as_json] },
+              "changes" => email_sent_event.attributes.transform_values { [nil, it.as_json] },
               "unchanged" => {}
             }
           },
@@ -593,15 +593,15 @@ class Avo::UsersSystemTest < ApplicationSystemTestCase
     page.assert_text audit.id
     assert_equal "User", audit.auditable_type
     assert_equal "Create User", audit.action
-    assert_equal(
+    assert_equal_hash(
       {
         "records" => {
           "gid://gemcutter/User/#{user.id}" => {
-            "changes" =>   user.attributes.transform_values { [nil, _1.as_json] },
+            "changes" =>   user.attributes.transform_values { [nil, it.as_json] },
             "unchanged" => {}
           },
           event.to_gid.as_json => {
-            "changes" => event.attributes.transform_values { [nil, _1.as_json] },
+            "changes" => event.attributes.transform_values { [nil, it.as_json] },
             "unchanged" => {}
           }
         },

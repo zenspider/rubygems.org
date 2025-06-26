@@ -1,18 +1,16 @@
 class OIDC::TrustedPublisher::GitHubAction::TableComponent < ApplicationComponent
-  extend Dry::Initializer
-
-  option :github_action
+  prop :github_action, reader: :public
 
   def view_template
     dl(class: "tw-flex tw-flex-col sm:tw-grid sm:tw-grid-cols-2 tw-items-baseline tw-gap-4 full-width overflow-wrap") do
-      dt(class: "adoption__heading ") { "GitHub Repository" }
+      dt(class: "description__heading ") { "GitHub Repository" }
       dd { code { github_action.repository } }
 
-      dt(class: "adoption__heading ") { "Workflow Filename" }
+      dt(class: "description__heading ") { "Workflow Filename" }
       dd { code { github_action.workflow_filename } }
 
       if github_action.environment?
-        dt(class: "adoption__heading") { "Environment" }
+        dt(class: "description__heading") { "Environment" }
         dd { code { github_action.environment } }
       end
     end

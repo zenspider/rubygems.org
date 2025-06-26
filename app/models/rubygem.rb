@@ -8,16 +8,13 @@ class Rubygem < ApplicationRecord
   has_many :owners_including_unconfirmed, through: :ownerships_including_unconfirmed, source: :user
   has_many :push_notifiable_owners, ->(gem) { gem.owners.push_notifiable_owners }, through: :ownerships, source: :user
   has_many :ownership_notifiable_owners, ->(gem) { gem.owners.ownership_notifiable_owners }, through: :ownerships, source: :user
-  has_many :ownership_request_notifiable_owners, ->(gem) { gem.owners.ownership_request_notifiable_owners }, through: :ownerships, source: :user
   has_many :subscriptions, dependent: :destroy
   has_many :subscribers, through: :subscriptions, source: :user
   has_many :versions, dependent: :destroy, validate: false
   has_one :latest_version, -> { latest.order(:position) }, class_name: "Version", inverse_of: :rubygem
   has_many :web_hooks, dependent: :destroy
-  has_one :linkset, dependent: :destroy
+  has_one :linkset, dependent: :destroy, inverse_of: :rubygem
   has_one :gem_download, -> { where(version_id: 0) }, inverse_of: :rubygem
-  has_many :ownership_calls, -> { opened }, dependent: :destroy, inverse_of: :rubygem
-  has_many :ownership_requests, -> { opened }, dependent: :destroy, inverse_of: :rubygem
   has_many :audits, as: :auditable, inverse_of: :auditable
   has_many :link_verifications, as: :linkable, inverse_of: :linkable, dependent: :destroy
   has_many :oidc_rubygem_trusted_publishers, class_name: "OIDC::RubygemTrustedPublisher", inverse_of: :rubygem, dependent: :destroy
@@ -25,6 +22,8 @@ class Rubygem < ApplicationRecord
   has_many :reverse_dependencies, through: :incoming_dependencies, source: :version_rubygem
   has_many :reverse_development_dependencies, -> { merge(Dependency.development) }, through: :incoming_dependencies, source: :version_rubygem
   has_many :reverse_runtime_dependencies, -> { merge(Dependency.runtime) }, through: :incoming_dependencies, source: :version_rubygem
+
+  belongs_to :organization, optional: true
 
   # needs to come last so its dependent: :destroy works, since yanking a version
   # will create an event
@@ -139,6 +138,9 @@ class Rubygem < ApplicationRecord
   end
 
   has_many :public_versions, -> { by_position.published }, class_name: "Version", inverse_of: :rubygem
+  has_many :public_versions_for_dependencies, lambda {
+    order(:rubygem_id).by_position.published.select(:rubygem_id, :full_name, :number, :platform)
+  }, class_name: "Version", inverse_of: :rubygem
 
   def public_versions_with_extra_version(extra_version)
     versions = public_versions.limit(5).to_a
@@ -176,7 +178,7 @@ class Rubygem < ApplicationRecord
   end
 
   def unowned?
-    ownerships.blank?
+    ownerships.none? && !owned_by_organization?
   end
 
   def indexed_versions?
@@ -185,7 +187,7 @@ class Rubygem < ApplicationRecord
 
   def owned_by?(user)
     return false unless user
-    ownerships.exists?(user_id: user.id)
+    ownerships.exists?(user_id: user.id) || (owned_by_organization? && user_authorized_for_organization?(user))
   end
 
   def owned_by_with_role?(user, minimum_required_role)
@@ -267,38 +269,11 @@ class Rubygem < ApplicationRecord
     Ownership.create_confirmed(self, user, user) if unowned?
   end
 
-  def ownership_call
-    ownership_calls.find_by(status: "opened")
-  end
-
-  def update_versions!(version, spec)
-    version.update_attributes_from_gem_specification!(spec)
-  end
-
-  def update_dependencies!(version, spec)
-    spec.dependencies.each do |dependency|
-      version.dependencies.create!(gem_dependency: dependency)
-    rescue ActiveRecord::RecordInvalid => e
-      # ActiveRecord can't chain a nested error here, so we have to add and reraise
-      e.record.errors.errors.each do |error|
-        errors.import(error, attribute: "dependency.#{error.attribute}")
-      end
-      raise
-    end
-  end
-
-  def update_linkset!(spec)
-    self.linkset ||= Linkset.new
-    self.linkset.update_attributes_from_gem_specification!(spec)
-    self.linkset.save!
-  end
-
   def update_attributes_from_gem_specification!(version, spec)
     Rubygem.transaction do
       save!
-      update_versions! version, spec
-      update_dependencies! version, spec
-      update_linkset! spec if version.reload.latest?
+      version.update_attributes_from_gem_specification!(spec)
+      version.update_dependencies!(spec)
     end
   end
 
@@ -379,6 +354,10 @@ class Rubygem < ApplicationRecord
     URI.join("https://rubygems.org/gems/", name)
   end
 
+  def owned_by_organization?
+    organization.present?
+  end
+
   private
 
   # a gem namespace is not protected if it is
@@ -429,5 +408,9 @@ class Rubygem < ApplicationRecord
 
     sanitized_query = ActiveRecord::Base.send(:sanitize_sql_array, update_query)
     ActiveRecord::Base.connection.execute(sanitized_query)
+  end
+
+  def user_authorized_for_organization?(user)
+    organization.memberships.exists?(user: user)
   end
 end

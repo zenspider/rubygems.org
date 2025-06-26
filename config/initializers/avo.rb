@@ -12,15 +12,18 @@ Avo.configure do |config| # rubocop:disable Metrics/BlockLength
   ## == Set the context ==
   config.set_context do
     # Return a context object that gets evaluated in Avo::ApplicationController
-
-    if !Rails.env.local? && !(Avo.license.valid? && Avo.license.advanced?)
-      raise "Avo::Pro is missing in #{Rails.env}. RAILS_GROUPS=#{ENV['RAILS_GROUPS'].inspect} Avo.license=#{Avo.license.inspect}"
-    end
   end
 
   ## == Authentication ==
   config.current_user_method = :admin_user
   config.authenticate_with do
+    if !Rails.env.local? && !(Avo.license.valid? && Avo.license.advanced?)
+      raise "Avo::Pro is missing in #{Rails.env}." \
+            "\nRails.groups=#{Rails.groups.inspect}" \
+            "\nAvo.license=#{Avo.license.inspect}" \
+            "\nAvo.configuration.license=#{Avo.configuration.license.inspect}"
+    end
+
     redirect_to '/' unless _current_user&.valid?
     Current.user = begin
       User.security_user
@@ -49,7 +52,9 @@ Avo.configure do |config| # rubocop:disable Metrics/BlockLength
   # config.locale = 'en-US'
 
   ## == Resource options ==
-  config.resource_controls_placement = :left
+  config.resource_row_controls_config = {
+    placement: :left
+  }
   # config.model_resource_mapping = {}
   # config.default_view_type = :table
   # config.per_page = 24

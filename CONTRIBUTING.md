@@ -114,7 +114,7 @@ Follow the instructions below on how to install Bundler and setup the database.
 
 ### Installing ruby, gem dependencies, and setting up the database
 
-* Use Ruby 3.3.x
+* Use Ruby 3.4.x
   * See: [Ruby install instructions](https://www.ruby-lang.org/en/downloads/).
   * `.ruby-version` is present and can be used.
 * Use Rubygems 3.5.x
@@ -217,20 +217,6 @@ RSTUF_API_URL="http://localhost:80" bin/rails s
 
 When everything is set up, start the web server with `rails server` and browse to
 [localhost:3000](http://localhost:3000)!
-
-#### Running with local Timescale
-
-There is early and experimental [TimescaleDB](https://docs.timescale.com/self-hosted/latest/) support in RubyGems.org for downloads statistics. When secondary `downloads` database is configured (using `database.yml` or by providing `DOWNLOADS_DATABASE_URL` environment variable), experimental features are automatically enabled.
-
-Localy, the easiest way is to run TimescaleDB using `docker-compose.yml` and configure using `database.yml.ts-sample`.
-
-```bash
-cp config/database.yml.ts-sample config/database.yml
-docker compose up -d db cache search # run required dependencies
-docker compose up -d downloads-db # run optional TimescaleDB dependency
-bin/rails db:setup # setup all databases, including optional Timescale one
-bin/rails s # start rails server as ususal
-```
 
 Database Layout
 ---------------

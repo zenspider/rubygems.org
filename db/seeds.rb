@@ -1,5 +1,10 @@
 password = "super-secret-password"
 
+org = Organization.create_with(
+  name: "RubyGems",
+  handle: "rubygems"
+).find_or_create_by!(name: "RubyGems")
+
 author = User.create_with(
   handle: "gem-author",
   password: password,
@@ -19,13 +24,19 @@ user = User.create_with(
   email_confirmed: true
 ).find_or_create_by!(email: "gem-user@example.com")
 
-requester = User.create_with(
-  handle: "gem-requester",
-  password: password,
-  email_confirmed: true
-).find_or_create_by!(email: "gem-requester@example.com")
+Membership.create_with(
+  role: :owner,
+  confirmed_at: Time.zone.now,
+  invited_by: nil
+).find_or_create_by!(user: author, organization: org)
+
+Membership.create_with(
+  role: :owner,
+  invited_by: author
+).find_or_create_by!(user: maintainer, organization: org)
 
 User.create_with(
+  handle: "gem-security",
   email_confirmed: true,
   password:
 ).find_or_create_by!(email: "security@rubygems.org")
@@ -43,22 +54,11 @@ rubygem1 = Rubygem.find_or_create_by!(
   rubygem.ownerships.new(user: maintainer, authorizer: author).confirm!
 end
 
-rubygem_requestable = Rubygem.find_or_create_by!(
-  name: "rubygem_requestable"
+rubygem2 = Rubygem.find_or_create_by!(
+  name: "rubygem2"
 ) do |rubygem|
-  rubygem.ownerships.new(user: author, authorizer: author).confirm!
+  rubygem.organization = org
 end
-
-rubygem_requestable.ownership_calls.create_with(
-  note: "closed ownership call note!",
-  status: :closed
-).find_or_create_by!(user: author)
-rubygem_requestable.ownership_calls.create_with(
-  note: "open ownership call note!"
-).find_or_create_by!(user: author)
-rubygem_requestable.ownership_requests.create_with(
-  note: "open ownership request"
-).find_or_create_by!(ownership_call: rubygem_requestable.ownership_call, user: requester)
 
 Version.create_with(
   indexed: true,
@@ -98,12 +98,21 @@ Version.create_with(
   pusher: author,
   yanked_at: Time.utc(2020, 3, 3),
   sha256: Digest::SHA2.base64digest("rubygem_requestable-1.0.0.gem")
-).find_or_create_by!(rubygem: rubygem_requestable, number: "1.0.0", platform: "ruby", gem_platform: "ruby")
+).find_or_create_by!(rubygem: rubygem1, number: "1.0.0", platform: "ruby", gem_platform: "ruby")
+
+Version.create_with(
+  indexed: true,
+  pusher: author,
+  dependencies: [Dependency.new(gem_dependency: Gem::Dependency.new("rubygem0", "~> 1.0.0"))],
+  sha256: Digest::SHA2.base64digest("rubygem2-1.0.0.gem")
+).find_or_create_by!(rubygem: rubygem2, number: "1.0.0", platform: "ruby", gem_platform: "ruby")
 
 user.web_hooks.find_or_create_by!(url: "https://example.com/rubygem0", rubygem: rubygem0)
 user.web_hooks.find_or_create_by!(url: "http://example.com/all", rubygem: nil)
 
-author.api_keys.find_or_create_by!(hashed_key: "securehashedkey", name: "api key", scopes: %i[push_rubygem])
+author.api_keys.create_with(
+  hashed_key: Digest::SHA256.hexdigest("gem-author-key")
+).find_or_create_by!(name: "api key", scopes: %i[push_rubygem])
 
 Admin::GitHubUser.create_with(
   is_admin: true,
@@ -297,6 +306,11 @@ OIDC::TrustedPublisher::GitHubAction.find_or_create_by!(
   environment: "deploy"
 ).rubygem_trusted_publishers.find_or_create_by!(rubygem: rubygem0)
 
+rubygem0.versions.find_by(full_name: "rubygem0-1.0.0").attestations.find_or_create_by!(
+  media_type: Sigstore::BundleType::BUNDLE_0_3.media_type,
+  body: JSON.parse(Rails.root.join("test", "gems", "sigstore-1.0.0.gem.sigstore.json").read)
+)
+
 author.oidc_pending_trusted_publishers.create_with(
   expires_at: 100.years.from_now
 ).find_or_create_by!(
@@ -317,5 +331,4 @@ puts <<~MESSAGE # rubocop:disable Rails/Output
     - email: #{author.email}, password: #{password} -> gem author owning few example gems
     - email: #{maintainer.email}, password: #{password} -> gem maintainer having push access to one author's example gem
     - email: #{user.email}, password: #{password} -> user with no gems
-    - email: #{requester.email}, password: #{password} -> user with an ownership request
 MESSAGE

@@ -124,15 +124,17 @@ class Api::V1::OIDC::TrustedPublisherControllerTest < ActionDispatch::Integratio
 
     %w[nbf exp iat iss jti].each do |claim|
       should "return bad request with missing/invalid #{claim}" do
-        @claims[claim] = ["a"]
+        payload = jwt # generates jwt hash
+        payload[claim] = ["a"]
+
         post api_v1_oidc_trusted_publisher_exchange_token_path,
-          params: { jwt: jwt.to_s }
+          params: { jwt: payload.to_s }
 
         assert_response :bad_request
 
-        @claims.delete claim
+        payload.delete claim
         post api_v1_oidc_trusted_publisher_exchange_token_path,
-          params: { jwt: jwt.to_s }
+          params: { jwt: payload.to_s }
 
         assert_response :bad_request
       end
@@ -154,6 +156,20 @@ class Api::V1::OIDC::TrustedPublisherControllerTest < ActionDispatch::Integratio
 
     should "return not found when time is after exp" do
       @claims["exp"] -= 1_000_000
+      trusted_publisher = build(:oidc_trusted_publisher_github_action,
+        repository_name: "oidc-test",
+        repository_owner_id: "1946610",
+        workflow_filename: "token.yml")
+      trusted_publisher.repository_owner = "segiddins"
+      trusted_publisher.save!
+      post api_v1_oidc_trusted_publisher_exchange_token_path,
+        params: { jwt: jwt.to_s }
+
+      assert_response :not_found
+    end
+
+    should "return not found when provider configuration is too old" do
+      OIDC::Provider.github_actions.update!(configuration_updated_at: 2.days.ago)
       trusted_publisher = build(:oidc_trusted_publisher_github_action,
         repository_name: "oidc-test",
         repository_owner_id: "1946610",
@@ -239,12 +255,13 @@ class Api::V1::OIDC::TrustedPublisherControllerTest < ActionDispatch::Integratio
       resp = response.parsed_body
 
       assert_match(/^rubygems_/, resp["rubygems_api_key"])
-      assert_equal({
-                     "rubygems_api_key" => resp["rubygems_api_key"],
-                      "name" => "GitHub Actions segiddins/oidc-test @ .github/workflows/token.yml 2023-03-28T16:22:17Z",
-                      "scopes" => ["push_rubygem"],
-                      "expires_at" => 15.minutes.from_now
-                   }, resp)
+      assert_equal_hash(
+        { "rubygems_api_key" => resp["rubygems_api_key"],
+          "name" => "GitHub Actions segiddins/oidc-test @ .github/workflows/token.yml 2023-03-28T16:22:17Z",
+          "scopes" => ["push_rubygem"],
+          "expires_at" => 15.minutes.from_now },
+        resp
+      )
 
       api_key = trusted_publisher.api_keys.sole
 

@@ -4,6 +4,7 @@ de:
   copied: Kopiert!
   copy_to_clipboard: In die Zwischenablage kopieren
   edit: Bearbeiten
+  hide: Verbergen
   verification_expired:
   feed_latest: RubyGems.org | Neueste Gems
   feed_subscribed: RubyGems.org | Abonnierte Gems
@@ -39,15 +40,21 @@ de:
   otp_missing: Sie haben die Mehrfaktor-Authentifizierung aktiviert, aber keinen OTP-Code
     angegeben. Bitte füllen Sie diesen aus und versuchen Sie es erneut.
   sign_in: Anmelden
+  sign_out: Abmelden
   sign_up: Registrieren
+  by_signing_up:
+  sign_up_terms:
   dependency_list: Alle transitiven Abhängigkeiten anzeigen
   multifactor_authentication: Mehrfaktorauthentifizierung
   subtitle: Ihre Community des Gem-Hostingservices
   this_rubygem_could_not_be_found: Dieses Ruby Gem konnte nicht gefunden werden.
   time_ago: seit %{duration}
   title: RubyGems.org
-  update: Aktualisieren
+  total_downloads: Downloads insgesamt
   try_again: Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.
+  update: Aktualisieren
+  remove:
+  view_all: Alle anzeigen
   advanced_search: Erweiterte Suche
   authenticate: Authentifizieren
   helpers:
@@ -75,8 +82,12 @@ de:
         password: Passwort
       ownership/role:
         owner:
+        maintainer:
+      membership/role:
+        owner:
         admin:
         maintainer:
+        outside_contributor:
       api_key:
         oidc_api_key_role: OIDC-API-Schlüsselrolle
       oidc/id_token:
@@ -108,15 +119,12 @@ de:
             user_id:
               already_confirmed: ist bereits Eigentümer dieses Gems
               already_invited: wurde bereits zu diesem Gem eingeladen
-        ownership_request:
-          attributes:
-            user_id:
-              taken:
-              existing:
         user:
           attributes:
             handle:
               invalid:
+            password:
+              bcrypt_length:
         version:
           attributes:
             gem_full_name:
@@ -215,9 +223,10 @@ de:
       mine: Meine Gems
       my_subscriptions: Abonnements
       no_owned_html: Du hast noch keine Gems gepusht. Schau doch vielleicht die Dokumentation
-        auf %{creating_link} an und %{migrating_link} ein Gem from RubyForge.
+        auf %{creating_link}.
       no_subscriptions_html: Du hast noch keine Gems abonniert. Besuche %{gem_link}
         um das Gem zu abonnieren!
+      organizations:
       title: Dashboard
   dependencies:
     show:
@@ -237,7 +246,7 @@ de:
   home:
     index:
       downloads_counting_html: Gezählte Downloads
-      find_blurb: Finde, installiere und veröffentliche RubyGems.
+      find_blurb_html: Finde, installiere und veröffentliche RubyGems.
       learn:
         install_rubygems: Installiere RubyGems
   layouts:
@@ -248,6 +257,7 @@ de:
         blog: Blog
         contribute: Beitragen
         data: Daten
+        docs: Dokumentation
         designed_by: Design von
         discussion_forum: Diskussion
         gems_served_by: Gems angeboten von
@@ -256,12 +266,17 @@ de:
         hosted_by: Gehostet von
         monitored_by: Überwacht von
         optimized_by: Optimiert mit
+        policies:
+        releases:
         resolved_with: Aufgelöst mit
         security: Security
         source_code: Code
         statistics: Statistiken
         status: Status
         supported_by: Unterstützt von
+        supported_by_html: |
+          <a href="https://rubygems.org" class="font-semibold">RubyGems.org</a>
+          wird unterstützt von
         tested_by:
         tracking_by: Getrackt von
         uptime: Betriebszeit
@@ -269,14 +284,22 @@ de:
         secured_by:
         looking_for_maintainers:
       header:
+        profile: Profil
         dashboard: Dashboard
-        settings:
-        edit_profile:
+        settings: Einstellungen
+        edit_profile: Profil bearbeiten
         search_gem_html: Suche Gems&hellip;
-        sign_in: Anmelden
-        sign_out: Abmelden
-        sign_up: Registrieren
+        members:
       mfa_banner_html:
+  breadcrumbs:
+    home: Startseite
+    dashboard: Dashboard
+    settings: Einstellungen
+    org_name: 'Organisation: %{name}'
+    subscriptions: Abonnements
+    gems:
+    members:
+    invite_member:
   mailer:
     confirm_your_email: Bitte bestätigen Sie Ihre E-Mail-Adresse mit dem Link, der
       an Ihre E-Mail gesendet wurde.
@@ -380,28 +403,6 @@ de:
       subtitle:
       body_html:
       body_text:
-    ownerhip_request_closed:
-      title: ANFRAGE ZUR BESITZERRECHTIGUNG
-      subtitle: Hallo %{handle}!
-      body_html: Vielen Dank, dass du dich um die Besitzerrechte für das <strong>%{gem}</strong>-Gem
-        beworben hast. Leider müssen wir dir mitteilen, dass deine Anfrage vom Gem-Besitzer
-        geschlossen wurde.
-    ownerhip_request_approved:
-      body_html: Herzlichen Glückwunsch! Deine Anfrage zur Besitzerrechte für das
-        <strong>%{gem}</strong>-Gem wurde genehmigt. Du wurdest als Besitzer zum Gem
-        hinzugefügt.
-    new_ownership_requests:
-      body_html:
-        zero: Es gibt <em>keine</em> neuen Anfragen zur Besitzerrechte für das <strong>%{gem}</strong>-Gem.
-        one: Es gibt <em>eine</em> neue Anfrage zur Besitzerrechte für das <strong>%{gem}</strong>-Gem.
-          Bitte klicke auf den unten stehenden Button, um sie anzuzeigen.
-        other: Es gibt <em>%{count}</em> neue Anfragen zur Besitzerrechte für das
-          <strong>%{gem}</strong>-Gem. Bitte klicke auf den unten stehenden Button,
-          um alle Anfragen anzuzeigen.
-      button: BESITZERRECHTE
-      disable_notifications: Um diese Nachrichten nicht mehr zu erhalten, aktualisiere
-        deine
-      owners_page: BESITZERRECHTE
     web_hook_deleted:
       title: WEBHOOK GELÖSCHT
       subject: Dein %{host}-Webhook wurde gelöscht
@@ -447,53 +448,107 @@ de:
       popular_gems: Beliebte Gems
     popular:
       title: Neue Veröffentlichungen — Beliebte Gems
+  organizations:
+    index:
+      title:
+    show:
+      organization:
+      gems:
+      history:
+      members:
+      no_history:
+      no_gems:
+      add_member:
+      invite:
+    members:
+      create:
+        user_already_invited:
+        user_not_found:
+        member_invited:
+      update:
+        member_updated:
+      destroy:
+        member_removed:
+        cannot_remove_self:
+      index:
+        invite:
+        pending:
+      edit:
+        update:
+        delete:
+      new:
+        handle:
+        role:
+        create:
+        invite:
+    invitations:
+      show:
+        accept:
+        decline:
+        title_html:
   pages:
     about:
       contributors_amount: "%{count} Rubyists"
       downloads_amount: Millionen von Gem-Downloads
-      checkout_code: bitte prüfe den Code
-      mit_licensed: MIT-lizenziert
+      checkout_code: sieh dir einfach den Code an
+      mit_licensed: MIT Lizenz
       logo_header: Auf der Suche nach unserem Logo?
-      logo_details: Wähle einfach den Download-Button, um drei .PNGs und eine .SVG
-        des RubyGems-Logos für dich zu erhalten.
+      logo_details: Klick einfach auf den Download-Button, um drei PNGs und eine SVG
+        des RubyGems-Logos zu erhalten.
       founding_html: Das Projekt wurde im April 2009 von %{founder} gestartet und
-        hat seitdem über %{contributors} und %{downloads}. Ab dem Release von RubyGems
-        1.3.6 wurde die Website von Gemcutter zu %{title} umbenannt, um eine zentrale
-        Rolle in der Ruby-Community zu verfestigen.
-      support_html: Obwohl RubyGems.org nicht von einem bestimmten Unternehmen ausgeführt
+        ist seitdem dank %{contributors} und %{downloads} gewachsen. Mit dem Release
+        von RubyGems 1.3.6 wurde die Website von Gemcutter zu %{title} umbenannt,
+        um ihre zentrale Rolle in der Ruby-Community zu verdeutlichen.
+      support_html: Obwohl RubyGems.org nicht von einem zentralen Unternehmen geführt
         wird, haben viele Unternehmen uns bereits unterstützt. Das aktuelle Design,
-        die Illustrationen und die Front-End-Entwicklung für dieser Webseite wurden
-        von %{dockyard} erstellt. %{github} hat auch von unschätzbarem Wert uns geholfen
-        den Code mit anderen Entwicklern zuteilen, um an dem Code leichter zusammenarbeiten.
-        Die Website wurde mit %{heroku} gestartet, dessen großen Dienst uns geholfen,
-        RubyGems als eine praktikable Lösung zu erweisen, wo die ganze Gemeinschaft
-        darauf verlassen kann. Our infrastructure is currently hosted on %{aws}.
+        die Illustrationen und die Frontend-Entwicklung wurden von %{dockyard} erstellt.
+        %{github} war auch von unschätzbarem Wert und hat uns sehr geholfen, zusammenzuarbeiten
+        und Code zu teilen. Die Website wurde mit %{heroku} gestartet, großartiger
+        Service dazu beitrug, RubyGems als eine praktikable Lösung zu beweisen, auf
+        die sich die gesamte Community verlassen kann. Unsere Infrastruktur wird derzeit
+        auf %{aws} gehostet.
       technical_html: 'Einige Einblicke in die technischen Aspekte dieser Webseite:
-        Es ist 100% in Ruby geschrieben. Die Hauptseite ist verwendet die %{rails}-Software.
-        Die Gems werden in %{s3}, served by %{fastly}, gehostet und die Zeit zwischen
-        der Veröffentlichung eines neuen Gems und nachdem er bereit zur Installation
-        freigegeben ist, ist minimal. Für mehr Informationen siehe %{source_code}
-        (%{license}) auf GitHub.'
+        Sie ist zu 100% in Ruby geschrieben. Die Hauptseite ist eine %{rails} App.
+        Die Gems werden auf %{s3} gehostet und über %{fastly} ausgeliefert, und die
+        Zeit nach der Veröffentlichung eines neuen Gems, bis es zur Installation bereit
+        seht, beträgt meistens nur einige wenige Sekunden. Für mehr Informationen
+        %{source_code}, der mit der %{license} auf GitHub bereitseht.'
       title: Über uns
       purpose:
-        better_api: Bereitstellen eines besseren APIs für den Umgang mit Gems
-        enable_community: Der Gemeinschaft ermöglichen, die Webseite zu verbessern
+        better_api: Eine bessere API bereitzustellen, um mit Gems zu arbeiten
+        enable_community: Es der Community zu ermöglichen, diese Webseite zu verbessern
           und zu erweitern
-        header: 'Willkommen in %{site}, die Community für Ruby Gem-Hostingservice.
-          Die Gründe sind vielfältig:'
-        transparent_pages: Erstellen transparenter und zugänglicher Projektseiten
+        header: 'Willkommen bei RubyGems.org, dem Gem-Hosting-Srrvice der Ruby-Community.
+          Dieses Projekt hat drei Ziele:'
+        transparent_pages: Mehr transparente und barrierefreie Projektseiten zu erstellen
     data:
       title: RubyGems.org Data Dumps
     download:
       title: Download RubyGems
-    faq:
-      title: FAQ
-    migrate:
-      title: Migrate gems
     security:
       title: Security
     sponsors:
       title: Sponsors
+  policies:
+    index:
+      title:
+    terms-of-service:
+      title:
+    acceptable-use:
+      title:
+    copyright:
+      title:
+    privacy:
+      title:
+  policies_mailer:
+    policy_update_announcement:
+      subject:
+      title:
+      subtitle:
+    policy_update_review_closed:
+      subject:
+      title:
+      subtitle:
   password_mailer:
     change_password:
       closing: If you didn't request this, ignore this email. Your password has not
@@ -516,6 +571,7 @@ de:
         Ändern deines Passworts.
       failure_on_missing_email: Die E-Mail darf nicht leer sein.
     update:
+      success:
       failure: Dein Passwort konnte nicht geändert werden. Bitte versuche es erneut.
   multifactor_auths:
     session_expired: Deine Sitzung auf der Anmeldeseite ist abgelaufen.
@@ -611,7 +667,6 @@ de:
       title:
       update:
       owner_heading:
-      owner_request_heading:
       push_heading:
   webauthn_verifications:
     expired_or_already_used:
@@ -628,7 +683,13 @@ de:
     failed_verification:
       title:
       close_browser:
+  organization_onboardings:
+    confirm:
+      success:
   owners:
+    edit:
+      role:
+      title:
     confirm:
       confirmed_email:
       token_expired:
@@ -640,28 +701,25 @@ de:
       confirmed_at:
       added_by:
       action:
+      role:
+      role_field:
       email_field:
       submit_button:
       info:
       confirmed:
       pending:
       confirm_remove:
-      role:
-      role_field:
     resend_confirmation:
       resent_notice:
     create:
+      success_notice:
+    update:
+      update_current_user_role:
       success_notice:
     destroy:
       removed_notice:
       failed_notice:
     mfa_required:
-    update:
-      success_notice:
-      update_current_user_role:
-    edit:
-      role:
-      title:
   settings:
     edit:
       title:
@@ -699,11 +757,6 @@ de:
           ui_and_api:
           ui_and_gem_signin:
   profiles:
-    adoptions:
-      no_ownership_calls:
-      no_ownership_requests:
-      title:
-      subtitle_html:
     edit:
       change_avatar:
       disabled_avatar_html:
@@ -775,7 +828,8 @@ de:
       reserved_namespace:
     dependencies:
       header: "%{title} Abhängigkeiten"
-    gem_members:
+    release_info:
+      managed_by:
       authors_header: Autoren
       self_no_mfa_warning_html:
       not_using_mfa_warning_show:
@@ -787,6 +841,7 @@ de:
       sha_256_checksum: SHA 256-Prüfsumme
       signature_period:
       expired:
+      provenance_header:
     version_navigation:
       previous_version:
       next_version:
@@ -848,7 +903,6 @@ de:
     index:
       title:
       all_time_most_downloaded: Am meisten Heruntergeladen in der gesamten Zeit
-      total_downloads: Downloads insgesamt
       total_gems: Gems insgesamt
       total_users: Benutzer insgesamt
   users:
@@ -866,47 +920,6 @@ de:
       imported_gem_version_notice:
     version:
       yanked:
-  adoptions:
-    index:
-      title:
-      subtitle_owner_html:
-      subtitle_user_html:
-      ownership_calls:
-      no_ownership_calls:
-  ownership_calls:
-    update:
-      success_notice:
-    create:
-      success_notice:
-    index:
-      title:
-      subtitle_html:
-    share_requirements:
-    note_for_applicants:
-    created_by:
-    details:
-    apply:
-    close:
-    markup_supported_html:
-    create_call:
-  ownership_requests:
-    create:
-      success_notice:
-    update:
-      approved_notice:
-      closed_notice:
-    close:
-      success_notice:
-    ownership_requests:
-    note_for_owners:
-    your_ownership_requests:
-    close_all:
-    approve:
-    gems_published:
-    created_at:
-    no_ownership_requests:
-    create_req:
-    signin_to_create_html:
   webauthn_credentials:
     callback:
       success:

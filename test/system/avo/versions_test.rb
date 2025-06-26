@@ -53,7 +53,7 @@ class Avo::VersionsSystemTest < ApplicationSystemTestCase
     rubygem_updated_at_changes = rubygem_audit["gid://gemcutter/Rubygem/#{rubygem.id}"]["changes"]["updated_at"]
     version_unyank_event = rubygem.events.where(tag: Events::RubygemEvent::VERSION_UNYANKED).sole
 
-    assert_equal(
+    assert_equal_hash(
       {
         "records" =>  {
           "gid://gemcutter/Version/#{version.id}" =>
@@ -97,7 +97,7 @@ class Avo::VersionsSystemTest < ApplicationSystemTestCase
             "unchanged" => {}
           },
           version_unyank_event.to_gid.to_s => {
-            "changes" => version_unyank_event.attributes.transform_values { [nil, _1] }.as_json,
+            "changes" => version_unyank_event.attributes.transform_values { [nil, it] }.as_json,
             "unchanged" => {}
           }
         },
